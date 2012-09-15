@@ -132,7 +132,59 @@ class Parser < Parslet::Parser
 end
 
 class Transform < Parslet::Transform
+	rule(:package => subtree(:identifiers)) {
+		s(:package, Identifier.new(identifiers.pop, identifiers))
+	}
 
+	rule(:message => subtree(:descriptor)) {
+		s(:message, Identifier.new(descriptor[:name]), *descriptor[:body])
+	}
+
+	rule(:field => subtree(:descriptor)) {
+		type = descriptor[:type].is_a?(Identifier) ? descriptor[:type] : descriptor[:type].to_sym
+
+		s(:field, Identifier.new(descriptor[:identifier]), type, descriptor[:label].to_sym, descriptor[:tag])
+	}
+
+	rule(:identifier => simple(:text)) {
+		text.to_s
+	}
+
+	rule(:tag => simple(:text)) {
+		text.to_s.to_i
+	}
+
+	rule(:user_type => subtree(:descriptor)) {
+		fully_qualified = descriptor.shift[:fully_qualified]
+		name            = descriptor.pop
+		namespace       = descriptor
+
+		Identifier.new(name, namespace, fully_qualified)
+	}
+
+	rule(:decimal => simple(:text)) {
+		text.to_i
+	}
+
+	rule(:hexadecimal => simple(:text)) {
+		text.to_i(16)
+	}
+
+	rule(:octal => simple(:text)) {
+		text.to_i(8)
+	}
+
+	rule(:float => simple(:text)) {
+		text.to_f
+	}
+
+	rule(:string => simple(:text)) {
+		text.to_s
+	}
+
+	rule(:bool => simple(:text)) {
+		text == 'true'
+	}
 end
 
 end
