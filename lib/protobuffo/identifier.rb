@@ -23,6 +23,10 @@ class Identifier
 		@fully_qualified
 	end
 
+	def == (other)
+		to_s == other.to_s
+	end
+
 	def to_str
 		@name
 	end

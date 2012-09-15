@@ -113,10 +113,15 @@ class Parser < Parslet::Parser
 	).as(:float) }
 
 	rule(:string) {
-		str('"') >> (
+		(str('"') >> (
 			str('\\') >> any |
 			str('"').absent? >> any
-		).repeat.as(:string) >> str('"') >> space?
+		).repeat.as(:string) >> str('"')) |
+
+		(str("'") >> (
+			str('\\') >> any |
+			str("'").absent? >> any
+		).repeat.as(:string) >> str("'")) >> space?
 	}
 
 	rule(:bool) {
@@ -151,7 +156,11 @@ class Transform < Parslet::Transform
 	}
 
 	rule(:tag => simple(:text)) {
-		text.to_s.to_i
+		text.to_s.to_i.tap {|x|
+			if x == 0 || x >= 2 ** 29 || !(x < 19000 && x > 19999)
+				raise RuntimeError, 'tag out of range'
+			end
+		}
 	}
 
 	rule(:user_type => subtree(:descriptor)) {
