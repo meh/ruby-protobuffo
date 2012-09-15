@@ -1,13 +1,15 @@
 #! /usr/bin/env ruby
 require 'rake'
 
-task :default => :test
+task :default => [:install, :test]
+
+task :install do
+	sh 'gem build *.gemspec'
+	sh 'gem install --development *.gem'
+end
 
 task :test do
-	sh 'gem build *.gemspec'
-	sh 'gem install *.gem'
-
-  Dir.chdir 'test'
-
-  sh 'rspec parser_spec.rb --color --format doc'
+	FileUtils.cd 'test' do
+		sh 'rspec parser_spec.rb --color --format doc'
+	end
 end
