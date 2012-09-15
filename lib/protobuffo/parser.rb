@@ -11,7 +11,7 @@
 require 'parslet'
 require 'sexp_processor'
 
-class ProtoBuffo
+module ProtoBuffo
 
 class Parser < Parslet::Parser
 	rule(:expression) {

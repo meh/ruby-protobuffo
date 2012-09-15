@@ -2,7 +2,7 @@ Kernel.load 'lib/protobuffo/version.rb'
 
 Gem::Specification.new {|s|
 	s.name         = 'protobuffo'
-	s.version      = Moc.version
+	s.version      = ProtoBuffo.version
 	s.author       = 'meh.'
 	s.email        = 'meh@schizofreni.co'
 	s.homepage     = 'https://github.com/meh/ruby-protobuffo'
@@ -15,4 +15,7 @@ Gem::Specification.new {|s|
 	s.require_paths = ['lib']
 
 	s.add_runtime_dependency 'parslet'
+
+	s.add_development_dependency 'rspec'
+	s.add_development_dependency 'rake'
 }
