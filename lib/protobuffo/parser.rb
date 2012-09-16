@@ -15,7 +15,7 @@ module ProtoBuffo
 
 class Parser < Parslet::Parser
 	rule(:expression) {
-		import | package | option | extend | message
+		comment | import | package | option | extend | message
 	}
 
 	rule(:expressions) {
@@ -23,6 +23,10 @@ class Parser < Parslet::Parser
 	}
 
 	root :expressions
+
+	rule(:comment) {
+		str('//') >> (match['\r\n'].absnt? >> any).repeat.as(:comment)
+	}
 
 	rule(:import) {
 		str('import') >> space? >> string.as(:import) >> space? >> str(';')
@@ -46,13 +50,20 @@ class Parser < Parslet::Parser
 
 	rule(:message) {
 		str('message') >> space >> (identifier.as(:name) >> space? >> str('{') >>
-			(field | enum | message | extend | extensions | option | str(';') | space).repeat.as(:body) >>
+			(comment | field | enum | message | extend | extensions | option | str(';') | space).repeat.as(:body) >>
 		str('}')).as(:message)
 	}
 
 	rule(:field) {
 		(label >> space? >> type >> space? >> identifier >>
-			(space? >> str('=') >> space? >> integer.as(:tag)).maybe).as(:field)
+			(space? >> str('=') >> space? >> integer.as(:tag)).maybe >>
+			(space? >> str('[') >> space? >> field_option.repeat(1, 1).as(:option) >>
+			 (space? >> str(',') >> space? >> field_option).repeat.maybe.as(:option) >>
+			space? >> str(']')).maybe).as(:field) >> space? >> str(';')
+	}
+
+	rule(:field_option) {
+		(str('default') | identifiers).as(:name) >> space? >> str('=') >> space? >> constant.as(:value)
 	}
 
 	rule(:enum) {
@@ -137,6 +148,10 @@ class Parser < Parslet::Parser
 end
 
 class Transform < Parslet::Transform
+	rule(:comment => simple(:text)) {
+		s(:comment, text.to_s)
+	}
+
 	rule(:package => subtree(:identifiers)) {
 		s(:package, Identifier.new(identifiers.pop, identifiers))
 	}
@@ -148,7 +163,7 @@ class Transform < Parslet::Transform
 	rule(:field => subtree(:descriptor)) {
 		type = descriptor[:type].is_a?(Identifier) ? descriptor[:type] : descriptor[:type].to_sym
 
-		s(:field, Identifier.new(descriptor[:identifier]), type, descriptor[:label].to_sym, descriptor[:tag])
+		s(:field, Identifier.new(descriptor[:identifier].to_s), type, descriptor[:label].to_sym, descriptor[:tag])
 	}
 
 	rule(:identifier => simple(:text)) {
@@ -158,7 +173,7 @@ class Transform < Parslet::Transform
 	rule(:tag => simple(:text)) {
 		text.to_s.to_i.tap {|x|
 			if x == 0 || x >= 2 ** 29 || !(x < 19000 && x > 19999)
-				raise RuntimeError, 'tag out of range'
+				raise RuntimeError, 'invalid tag number'
 			end
 		}
 	}

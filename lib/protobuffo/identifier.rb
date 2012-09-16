@@ -11,7 +11,7 @@
 module ProtoBuffo
 
 class Identifier
-	attr_reader :namespace
+	attr_reader :namespace, :name
 
 	def initialize (name, namespace = [], fully_qualified = false)
 		@name            = name
@@ -28,7 +28,7 @@ class Identifier
 	end
 
 	def to_str
-		@name
+		(namespace + [@name]).join '.'
 	end
 
 	alias to_s to_str
