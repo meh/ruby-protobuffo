@@ -43,9 +43,9 @@ class Parser < Parslet::Parser
 	}
 
 	rule(:extend) {
-		str('extend') >> space >> (user_type.as(:name) >> str('{') >>
+		str('extend') >> space >> (user_type.as(:name) >> space? >> str('{') >>
 			(field | str(';') | space).repeat.as(:body) >>
-		str('{')).as(:extend)
+		str('}')).as(:extend)
 	}
 
 	rule(:message) {
@@ -75,9 +75,13 @@ class Parser < Parslet::Parser
 	}
 
 	rule(:extensions) {
-		str('extensions') >> space >> (integer.as(:from) >>
-			(space? >> str('to') >> space? >> (integer | str('max')).as(:to)).maybe).as(:extensions)
+		str('extensions') >> space >> (extension.repeat(1, 1) >>
+			(space? >> str(',') >> space? >> extension).repeat.maybe).as(:extensions) >> space? >> str(';')
 	}
+
+	rule(:extension) { (
+		integer.as(:from) >> (space? >> str('to') >> space? >> (integer | str('max')).as(:to)).maybe
+	).as(:extension) }
 
 	rule(:identifier) {
 		(match('[A-Za-z_]') >> match('[\w_]').repeat).as(:identifier)
@@ -152,12 +156,40 @@ class Transform < Parslet::Transform
 		s(:comment, text.to_s)
 	}
 
+	rule(:import => simple(:text)) {
+		s(:import, text.to_s)
+	}
+
 	rule(:package => subtree(:identifiers)) {
 		s(:package, Identifier.new(identifiers.pop, identifiers))
 	}
 
+	rule(:option => subtree(:descriptor)) {
+		s(:option, Identifier.new(descriptor[:name].pop, descriptor[:name]), descriptor[:value])
+	}
+
+	rule(:extend => subtree(:descriptor)) {
+		s(:extend, Identifier.new(descriptor[:name]), *descriptor[:body])
+	}
+
 	rule(:message => subtree(:descriptor)) {
-		s(:message, Identifier.new(descriptor[:name]), *descriptor[:body])
+		if descriptor[:body].is_a?(Array)
+			s(:message, Identifier.new(descriptor[:name]), *descriptor[:body])
+		else
+			s(:message, Identifier.new(descriptor[:name]))
+		end
+	}
+
+	rule(:extensions => subtree(:extensions)) {
+		s(:extensions, *extensions)
+	}
+
+	rule(:extension => subtree(:descriptor)) {
+		if descriptor[:to]
+			s(:extension, descriptor[:from], descriptor[:to] == 'max' ? 536_870_911 : descriptor[:to])
+		else
+			s(:extension, descriptor[:from])
+		end
 	}
 
 	rule(:field => subtree(:descriptor)) {
