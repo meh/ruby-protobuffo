@@ -21,9 +21,9 @@ describe ProtoBuffo do
 		let :field_labels do
 			ProtoBuffo.to_sexp(%q{
 				message A {
-					required int32 a;
-					optional int32 b;
-					repeated int32 c;
+					required int32 a = 1;
+					optional int32 b = 2;
+					repeated int32 c = 3;
 				}
 			})
 		end
@@ -31,23 +31,32 @@ describe ProtoBuffo do
 		let :field_types do
 			ProtoBuffo.to_sexp(%q{
 				message A {
-					required double   a;
-					required float    a;
-					required int32    a;
-					required int64    a;
-					required uint32   a;
-					required uint64   a;
-					required sint32   a;
-					required sint64   a;
-					required fixed32  a;
-					required fixed64  a;
-					required sfixed32 a;
-					required sfixed64 a;
-					required bool     a;
-					required string   a;
-					required bytes    a;
+					required double   a = 1;
+					required float    a = 1;
+					required int32    a = 1;
+					required int64    a = 1;
+					required uint32   a = 1;
+					required uint64   a = 1;
+					required sint32   a = 1;
+					required sint64   a = 1;
+					required fixed32  a = 1;
+					required fixed64  a = 1;
+					required sfixed32 a = 1;
+					required sfixed64 a = 1;
+					required bool     a = 1;
+					required string   a = 1;
+					required bytes    a = 1;
 
-					required LOL wat;
+					required LOL wat = 1;
+				}
+			})
+		end
+
+		let :field_options do
+			ProtoBuffo.to_sexp(%q{
+				message A {
+					required int32 a = 1 [default = 23];
+					required int32 b = 2 [lol = 23, wut = 42];
 				}
 			})
 		end
@@ -82,7 +91,7 @@ describe ProtoBuffo do
 		let :extend do
 			ProtoBuffo.to_sexp(%q{
 				extend A {
-					required int32 a;
+					required int32 a = 1;
 				}
 			})
 		end
@@ -92,6 +101,19 @@ describe ProtoBuffo do
 				message A {
 					extensions 1 to 10;
 					extensions 1, 3 to max;
+				}
+			})
+		end
+
+		let :enum do
+			ProtoBuffo.to_sexp(%q{
+				message A {
+					enum B {
+						LOL = 1;
+						WUT = 2;
+					}
+
+					required B a = 1;
 				}
 			})
 		end
@@ -138,7 +160,7 @@ describe ProtoBuffo do
 			field_labels.first.sexp_body[3].sexp_body[2].should == :repeated
 		end
 
-		it 'handles types' do
+		it 'handles field types' do
 			field_types.first.sexp_body[1].sexp_body[1].should === :double
 			field_types.first.sexp_body[2].sexp_body[1].should === :float
 			field_types.first.sexp_body[3].sexp_body[1].should === :int32
@@ -158,6 +180,13 @@ describe ProtoBuffo do
 			field_types.first.sexp_body[16].sexp_body[1].should_not be(Symbol)
 		end
 
+		it 'handles field options' do
+			field_options.first.sexp_body[1].sexp_body[4][0].should == [:default, 23]
+
+			field_options.first.sexp_body[2].sexp_body[4][0].should == ['lol', 23]
+			field_options.first.sexp_body[2].sexp_body[4][1].should == ['wut', 42]
+		end
+
 		it 'handles extensions statements' do
 			extensions.first.sexp_body[1].sexp_type.should == :extensions
 			extensions.first.sexp_body[1].sexp_body[0].sexp_body[0].should == 1
@@ -169,6 +198,13 @@ describe ProtoBuffo do
 			extensions.first.sexp_body[2].sexp_type.should == :extensions
 			extensions.first.sexp_body[2].sexp_body[1].sexp_body[0].should == 3
 			extensions.first.sexp_body[2].sexp_body[1].sexp_body[1].should == 536870911
+		end
+
+		it 'handles enums' do
+			enum.first.sexp_body[1].sexp_type.should == :enum
+			enum.first.sexp_body[1].sexp_body[0].should == 'B'
+			enum.first.sexp_body[1].sexp_body[1].should == ['LOL', 1]
+			enum.first.sexp_body[1].sexp_body[2].should == ['WUT', 2]
 		end
 	end
 end

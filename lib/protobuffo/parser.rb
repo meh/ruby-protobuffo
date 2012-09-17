@@ -15,7 +15,7 @@ module ProtoBuffo
 
 class Parser < Parslet::Parser
 	rule(:expression) {
-		comment | import | package | option | extend | message
+		comment | import | package | option | extend | enum | message | str(';')
 	}
 
 	rule(:expressions) {
@@ -49,30 +49,32 @@ class Parser < Parslet::Parser
 	}
 
 	rule(:message) {
-		str('message') >> space >> (identifier.as(:name) >> space? >> str('{') >>
-			(comment | field | enum | message | extend | extensions | option | str(';') | space).repeat.as(:body) >>
-		str('}')).as(:message)
+		str('message') >> space >> (identifier.as(:name) >> space? >> str('{') >> (
+			comment | field | enum | message | extend | extensions | option | str(';') | space
+		).repeat.as(:body) >> str('}')).as(:message)
 	}
 
 	rule(:field) {
 		(label >> space? >> type >> space? >> identifier >>
-			(space? >> str('=') >> space? >> integer.as(:tag)).maybe >>
-			(space? >> str('[') >> space? >> field_option.repeat(1, 1).as(:option) >>
-			 (space? >> str(',') >> space? >> field_option).repeat.maybe.as(:option) >>
+			space? >> str('=') >> space? >> integer.as(:tag) >>
+			(space? >> str('[') >> space? >> field_option.repeat(1, 1) >>
+			 (space? >> str(',') >> space? >> field_option).repeat.maybe >>
 			space? >> str(']')).maybe).as(:field) >> space? >> str(';')
 	}
 
-	rule(:field_option) {
+	rule(:field_option) { (
 		(str('default') | identifiers).as(:name) >> space? >> str('=') >> space? >> constant.as(:value)
-	}
+	).as(:field_option) }
 
 	rule(:enum) {
-		str('enum') >> space >> (identifier.as(:name) >> str('{') >>
-			(option | (
-				identifier.as(:name) >> space? >> str('=') >> space? >> integer.as(:value) >> space? >> str(';')
-			).as(:field) | str(';')).repeat.as(:body) >>
-		str('}')).as(:enum)
+		str('enum') >> space >> (identifier.as(:name) >> space? >> str('{') >> (
+			option | enum_field | space | str(';')
+		).repeat.as(:body) >> str('}')).as(:enum)
 	}
+
+	rule(:enum_field) { (
+		identifier.as(:name) >> space? >> str('=') >> space? >> integer.as(:value) >> space? >> str(';')
+	).as(:enum_field) }
 
 	rule(:extensions) {
 		str('extensions') >> space >> (extension.repeat(1, 1) >>
@@ -192,10 +194,25 @@ class Transform < Parslet::Transform
 		end
 	}
 
-	rule(:field => subtree(:descriptor)) {
-		type = descriptor[:type].is_a?(Identifier) ? descriptor[:type] : descriptor[:type].to_sym
+	rule(:enum => subtree(:descriptor)) {
+		s(:enum, Identifier.new(descriptor[:name]), *descriptor[:body])
+	}
 
-		s(:field, Identifier.new(descriptor[:identifier].to_s), type, descriptor[:label].to_sym, descriptor[:tag])
+	rule(:enum_field => subtree(:descriptor)) {
+		[Identifier.new(descriptor[:name].to_s), descriptor[:value]]
+	}
+
+	rule(:field => subtree(:payload)) {
+		descriptor, *options = payload
+		type                 = descriptor[:type].is_a?(Identifier) ? descriptor[:type] : descriptor[:type].to_sym
+
+		s(:field, Identifier.new(descriptor[:identifier].to_s), type, descriptor[:label].to_sym, descriptor[:tag], options)
+	}
+
+	rule(:field_option => subtree(:descriptor)) {
+		name = descriptor[:name] == 'default' ? :default : Identifier.new(descriptor[:name].pop, descriptor[:name])
+
+		[name, descriptor[:value]]
 	}
 
 	rule(:identifier => simple(:text)) {
