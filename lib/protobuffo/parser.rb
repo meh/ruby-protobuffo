@@ -63,7 +63,7 @@ class Parser < Parslet::Parser
 	}
 
 	rule(:field_option) { (
-		(str('default') | identifiers).as(:name) >> space? >> str('=') >> space? >> constant.as(:value)
+		(str('default') | str('packed') | str('deprecated') | identifiers).as(:name) >> space? >> str('=') >> space? >> constant.as(:value)
 	).as(:field_option) }
 
 	rule(:enum) {
@@ -111,9 +111,10 @@ class Parser < Parslet::Parser
 		decimal | hexadecimal | octal
 	}
 
-	rule(:decimal) {
-		(match('[1-9]') >> match('\d').repeat).as(:decimal)
-	}
+	rule(:decimal) { (
+		(match('[1-9]') >> match('\d').repeat) |
+		(str('0') >> match('[xX0-7]').absnt?)
+	).as(:decimal) }
 
 	rule(:hexadecimal) {
 		(str('0') >> (str('x') | str('X')) >> match('[A-Fa-f0-9]').repeat(1)).as(:hexadecimal)
@@ -146,7 +147,7 @@ class Parser < Parslet::Parser
 	}
 
 	rule(:constant) {
-		identifier | integer | float | string | bool
+		user_type | integer | float | string | bool
 	}
 
 	rule(:space)  { match('\s').repeat(1) }
@@ -210,7 +211,8 @@ class Transform < Parslet::Transform
 	}
 
 	rule(:field_option => subtree(:descriptor)) {
-		name = descriptor[:name] == 'default' ? :default : Identifier.new(descriptor[:name].pop, descriptor[:name])
+		name = %w(default packed deprecated).member?(descriptor[:name]) ?
+			descriptor[:name].to_sym : Identifier.new(descriptor[:name].pop, descriptor[:name])
 
 		[name, descriptor[:value]]
 	}

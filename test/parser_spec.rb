@@ -109,8 +109,8 @@ describe ProtoBuffo do
 			ProtoBuffo.to_sexp(%q{
 				message A {
 					enum B {
-						LOL = 1;
-						WUT = 2;
+						LOL = 0;
+						WUT = 1;
 					}
 
 					required B a = 1;
@@ -203,8 +203,8 @@ describe ProtoBuffo do
 		it 'handles enums' do
 			enum.first.sexp_body[1].sexp_type.should == :enum
 			enum.first.sexp_body[1].sexp_body[0].should == 'B'
-			enum.first.sexp_body[1].sexp_body[1].should == ['LOL', 1]
-			enum.first.sexp_body[1].sexp_body[2].should == ['WUT', 2]
+			enum.first.sexp_body[1].sexp_body[1].should == ['LOL', 0]
+			enum.first.sexp_body[1].sexp_body[2].should == ['WUT', 1]
 		end
 	end
 end

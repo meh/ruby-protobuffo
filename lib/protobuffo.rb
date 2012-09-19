@@ -9,12 +9,17 @@
 #++
 
 module ProtoBuffo
-	autoload :Identifier, 'protobuffo/identifier'
+	autoload :Wire, 'protobuffo/wire'
 
 	autoload :Parser, 'protobuffo/parser'
 	autoload :Transform, 'protobuffo/parser'
-
 	autoload :Compiler, 'protobuffo/compiler'
+
+	autoload :Identifier, 'protobuffo/identifier'
+	autoload :Enum, 'protobuffo/enum'
+	autoload :Unknown, 'protobuffo/unknown'
+	autoload :Field, 'protobuffo/field'
+	autoload :Message, 'protobuffo/message'
 
 	def self.compile (what)
 		Compiler.new.compile(if what.respond_to? :to_io
