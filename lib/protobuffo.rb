@@ -19,7 +19,8 @@ module ProtoBuffo
 	autoload :Unknown, 'protobuffo/unknown'
 	autoload :Repeated, 'protobuffo/repeated'
 	autoload :Enum, 'protobuffo/enum'
-	autoload :Field, 'protobuffo/field'
+	autoload :Field, 'protobuffo/fields'
+	autoload :Fields, 'protobuffo/fields'
 	autoload :Message, 'protobuffo/message'
 
 	def self.compile (what)

@@ -16,11 +16,13 @@ class Field
 	attr_reader :rule, :type, :name, :tag, :options
 
 	def initialize (rule, type, name, tag, options = {})
-		@rule    = rule
-		@type    = type
-		@name    = name
-		@tag     = tag
-		@options = options
+		@rule    = rule.freeze
+		@type    = type.freeze
+		@name    = name.freeze
+		@tag     = tag.freeze
+		@options = options.freeze
+
+		freeze
 	end
 
 	def required?; rule == :required; end
@@ -30,6 +32,7 @@ class Field
 	def default;       options[:default];    end
 	def packed?;     !!options[:packed];     end
 	def deprecated?; !!options[:deprecated]; end
+	def extension?;  !!options[:extension];  end
 
 	def <=> (other)
 		tag <=> other.tag
@@ -47,6 +50,57 @@ class Field
 			when Enum                                 then type.has?(value)
 			when Class                                then value.is_a?(type)
 		end
+	end
+end
+
+class Fields
+	include Enumerable
+
+	attr_reader :message
+
+	def initialize (message)
+		@message    = message
+		@fields     = []
+		@extensions = []
+	end
+
+	def add_extensions (what)
+		unless what.is_a?(Integer) || (what.is_a?(Range) && what.begin.is_a?(Integer) && what.end.is_a?(Integer))
+			raise ArgumentError, "#{what.inspect} is not an Integer or a Range made of Integers"
+		end
+
+		@extensions << what
+	end
+
+	def add (rule, type, name, tag, options)
+		Field.new(rule, type, name, tag, options).tap {|field|
+			if self[field.tag]
+				raise ArgumentError, "#{field.tag} is already present"
+			end
+
+			if field.extension? && !extension?(field.tag)
+				raise ArgumentError, "#{field.tag} isn't available as an extension"
+			end
+
+			@fields << field
+			@fields.sort_by!(&:tag)
+		}
+	end
+
+	def each (&block)
+		return enum_for :each unless block
+
+		@fields.each(&block)
+
+		self
+	end
+
+	def [] (what)
+		find { |f| what === f.name || what === f.tag }
+	end
+
+	def extension? (tag)
+		@extensions.any? { |n| n === tag }
 	end
 end
 

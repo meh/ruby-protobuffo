@@ -21,11 +21,11 @@ class Message
 		end
 
 		def fields
-			@fields ||= []
+			@fields ||= Fields.new(self)
 		end
 
 		def field (rule, type, name, tag, options = {})
-			fields << Field.new(rule, type, name, tag, options).tap {|field|
+			fields.add(rule, type, name, tag, options).tap {|field|
 				instance_variable_name = "@#{name}".to_sym
 
 				if field.repeated?
@@ -68,6 +68,10 @@ class Message
 
 		def repeated (*args)
 			field :repeated, *args
+		end
+
+		def extensions (what)
+			fields.add_extensions(what)
 		end
 
 		def unpack (io, options = {})
@@ -118,7 +122,7 @@ class Message
 
 	def set (values = {})
 		values.each {|name, value|
-			next unless field = self.class.fields.find { |f| f.name == name }
+			next unless field = self.class.fields[name]
 
 			if field.repeated?
 				unless value.respond_to? :each
@@ -173,7 +177,7 @@ class Message
 
 		wire = Wire.new(io)
 
-		self.class.fields.sort_by(&:tag).each {|field|
+		self.class.fields.each {|field|
 			if field.repeated?
 				if field.packed?
 					wire.write_info(field.tag, :bytes)
