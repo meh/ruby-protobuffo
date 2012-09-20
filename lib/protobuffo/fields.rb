@@ -8,6 +8,12 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 #++
 
+if RUBY_VERSION.start_with? '1.8'
+	require 'rubygems'
+end
+
+require 'backports/1.9.2/array'
+
 module ProtoBuffo
 
 class Field

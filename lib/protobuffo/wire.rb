@@ -39,7 +39,7 @@ class Wire
 	def initialize (io = nil)
 		if io.nil? || io.is_a?(String)
 			@io = StringIO.new(*io)
-			@io.set_encoding 'BINARY', 'BINARY'
+			@io.set_encoding 'BINARY'
 		else
 			@io = io
 		end
