@@ -50,9 +50,7 @@ class Message
 							warn "#{name} is deprecated for #{self.class.name} in #{self.class.package}"
 						end
 
-						field.validate!(value)
-
-						instance_variable_set instance_variable_name, value
+						instance_variable_set instance_variable_name, field.validate!(value)
 					end
 				end
 			}
@@ -82,8 +80,8 @@ class Message
 				tag, type = wire.read_info
 
 				if field = fields.find { |f| f.tag == tag }
-					if type != Wire.type_for(field.type) && !(field.repeated? && type == Wire.type_for(:bytes))
-						raise "wrong type for #{field.name} for #{name} in #{package}"
+					unless type == Wire.type_for(:bytes) && field.repeated? || field.type.is_a?(Class)
+						raise "wrong type for #{field.name} for #{name} in #{package}" if type != Wire.type_for(field.type)
 					end
 
 					if field.repeated?
@@ -96,6 +94,10 @@ class Message
 						else
 							message[field.name].push(wire.read(field.type))
 						end
+					elsif field.type.is_a?(Enum)
+						message[field.name] = wire.read_int32
+					elsif field.type.is_a?(Class)
+						message[field.name] = wire.read_bytes
 					else
 						message[field.name] = wire.read(field.type)
 					end

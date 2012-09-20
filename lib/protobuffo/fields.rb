@@ -48,7 +48,13 @@ class Field
 			when :float, :double                      then value.is_a?(Numeric)
 			when :bytes, :string                      then value.is_a?(String)
 			when Enum                                 then type.has?(value)
-			when Class                                then value.is_a?(type)
+			when Class                                then value.is_a?(String) || value.is_a?(type)
+		end
+
+		case type
+			when Enum  then type.to_sym(value)
+			when Class then value.is_a?(String) ? type.unpack(value) : value
+			else            value
 		end
 	end
 end
@@ -82,7 +88,7 @@ class Fields
 				raise ArgumentError, "#{field.tag} isn't available as an extension"
 			end
 
-			if field.type.is_a?(Class) && !field.ancestors.member?(Message)
+			if field.type.is_a?(Class) && !field.type.ancestors.member?(Message)
 				raise ArgumentError, "#{field.type} has to be a subclass of Message"
 			end
 

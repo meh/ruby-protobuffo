@@ -12,7 +12,7 @@ end
 
 task :test do
 	FileUtils.cd 'test' do
-		sh 'rspec parser_spec.rb --color --format doc'
-		sh 'rspec message_spec.rb --color --format doc'
+		sh 'rspec parser_spec.rb --backtrace --color --format doc'
+		sh 'rspec message_spec.rb --backtrace --color --format doc'
 	end
 end
