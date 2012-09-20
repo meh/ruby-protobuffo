@@ -35,8 +35,8 @@ class Field
 		tag <=> other.tag
 	end
 
-	def verify_value! (value)
-		raise ArgumentError, "#{value.inspect} is invalid for #{field.type}" unless case type
+	def validate! (value)
+		raise ArgumentError, "#{value.inspect} is invalid for #{type}" unless case type
 			when :bool                                then value.is_a?(TrueClass) || value.is_a?(FalseClass)
 			when :int32, :sint32, :fixed32, :sfixed32 then value.is_a?(Integer) && value >= Wire::MIN_INT32 && value <= Wire::MAX_INT32
 			when :uint32                              then value.is_a?(Integer) && value >= Wire::MIN_UINT32 && value <= Wire::MAX_UINT32

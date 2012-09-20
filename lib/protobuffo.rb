@@ -11,13 +11,14 @@
 module ProtoBuffo
 	autoload :Wire, 'protobuffo/wire'
 
+	autoload :Identifier, 'protobuffo/identifier'
 	autoload :Parser, 'protobuffo/parser'
 	autoload :Transform, 'protobuffo/parser'
 	autoload :Compiler, 'protobuffo/compiler'
 
-	autoload :Identifier, 'protobuffo/identifier'
-	autoload :Enum, 'protobuffo/enum'
 	autoload :Unknown, 'protobuffo/unknown'
+	autoload :Repeated, 'protobuffo/repeated'
+	autoload :Enum, 'protobuffo/enum'
 	autoload :Field, 'protobuffo/field'
 	autoload :Message, 'protobuffo/message'
 
@@ -39,5 +40,15 @@ module ProtoBuffo
 		else
 			what.to_s
 		end))
+	end
+
+	def self.require_proto (path, options = {})
+
+	end
+end
+
+module Kernel
+	def require_proto (*args)
+		ProtoBuffo.require_proto(*args)
 	end
 end

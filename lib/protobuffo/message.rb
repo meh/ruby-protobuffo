@@ -24,50 +24,17 @@ class Message
 			@fields ||= []
 		end
 
-		# TODO: implement proper checking for repeated fields
 		def field (rule, type, name, tag, options = {})
 			fields << Field.new(rule, type, name, tag, options).tap {|field|
 				instance_variable_name = "@#{name}".to_sym
 
 				if field.repeated?
 					define_method name do |&block|
-						return enum_for name unless block
-
-						return unless instance_variable_defined? instance_variable_name
-
-						instance_variable_get(instance_variable_name).each(&block)
-
-						self
-					end
-
-					define_method "add_#{name}" do |value|
-						field.verify_value!(value)
-
 						unless instance_variable_defined? instance_variable_name
-							instance_variable_set instance_variable_name, []
+							instance_variable_set instance_variable_name, Repeated.new(field)
 						end
 
-						instance_variable_get(instance_variable_name).push(value)
-
-						self
-					end
-
-					define_method "clear_#{name}" do
-						unless instance_variable_defined? instance_variable_name
-							instance_variable_set instance_variable_name, []
-						end
-
-						instance_variable_get(instance_variable_name).clear
-
-						self
-					end
-
-					define_method "delete_#{name}" do |value|
-						unless instance_variable_defined? instance_variable_name
-							instance_variable_set instance_variable_name, []
-						end
-
-						instance_variable_get(instance_variable_name).delete(value)
+						instance_variable_get(instance_variable_name)
 					end
 				else
 					attr_reader name
@@ -83,7 +50,7 @@ class Message
 							warn "#{name} is deprecated for #{self.class.name} in #{self.class.package}"
 						end
 
-						field.verify_value!(value)
+						field.validate!(value)
 
 						instance_variable_set instance_variable_name, value
 					end
@@ -120,10 +87,10 @@ class Message
 							tmp = Wire.new(wire.read_bytes)
 
 							until tmp.to_io.eof?
-								message.add(field.name, tmp.read(field.type))
+								message[field.name].push(tmp.read(field.type))
 							end
 						else
-							message.add(field.name, wire.read(field.type))
+							message[field.name].push(wire.read(field.type))
 						end
 					else
 						message[field.name] = wire.read(field.type)
@@ -154,8 +121,12 @@ class Message
 			next unless field = self.class.fields.find { |f| f.name == name }
 
 			if field.repeated?
+				unless value.respond_to? :each
+					raise ArgumentError, "#{value.inspect} has to be Enumerable"
+				end
+
 				value.each {|value|
-					add(name, value)
+					self[name].push(value)
 				}
 			else
 				self[name] = value
@@ -175,18 +146,6 @@ class Message
 
 	def []= (name, value)
 		__send__ "#{name}=", value
-	end
-
-	def add (name, value)
-		__send__ "add_#{name}", value
-	end
-
-	def delete (name, value)
-		__send__ "delete_#{name}", value
-	end
-
-	def clear (name)
-		__send__ "clear_#{name}"
 	end
 
 	def unknown
