@@ -82,6 +82,10 @@ class Fields
 				raise ArgumentError, "#{field.tag} isn't available as an extension"
 			end
 
+			if field.type.is_a?(Class) && !field.ancestors.member?(Message)
+				raise ArgumentError, "#{field.type} has to be a subclass of Message"
+			end
+
 			@fields << field
 			@fields.sort_by!(&:tag)
 		}
