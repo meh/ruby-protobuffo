@@ -21,19 +21,19 @@ describe ProtoBuffo::Message do
 
 	describe '#pack' do
 		it 'packs correctly the first encoding example' do
-			Test1.new(a: 150).pack.string.should == "\x08\x96\x01"
+			Test1.new(:a => 150).pack.string.should == "\x08\x96\x01"
 		end
 
 		it 'packs correctly the second encoding example' do
-			Test2.new(b: 'testing').pack.string.should == "\x12\x07\x74\x65\x73\x74\x69\x6e\x67"
+			Test2.new(:b => 'testing').pack.string.should == "\x12\x07\x74\x65\x73\x74\x69\x6e\x67"
 		end
 
 		it 'packs correctly the third encoding example' do
-			Test3.new(c: Test1.new(a: 150)).pack.string.should == "\x1a\x03\x08\x96\x01"
+			Test3.new(:c => Test1.new(:a => 150)).pack.string.should == "\x1a\x03\x08\x96\x01"
 		end
 
 		it 'packs correctly the fourth encoding example' do
-			Test4.new(d: [3, 270, 86942]).pack.string.should == "\x22\x06\x03\x8E\x02\x9E\xA7\x05"
+			Test4.new(:d => [3, 270, 86942]).pack.string.should == "\x22\x06\x03\x8E\x02\x9E\xA7\x05"
 		end
 	end
 
