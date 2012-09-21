@@ -14,7 +14,7 @@ Gem::Specification.new {|s|
 	s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
 	s.require_paths = ['lib']
 
-	s.add_runtime_dependency 'backports'
+	s.required_ruby_version = '>= 1.9'
 
 	s.add_runtime_dependency 'parslet'
 	s.add_runtime_dependency 'sexp_processor'

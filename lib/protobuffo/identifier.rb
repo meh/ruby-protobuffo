@@ -14,8 +14,8 @@ class Identifier
 	attr_reader :namespace, :name
 
 	def initialize (name, namespace = [], fully_qualified = false)
-		@name            = name
-		@namespace       = namespace
+		@name            = name.freeze
+		@namespace       = namespace.freeze
 		@fully_qualified = fully_qualified
 	end
 
@@ -23,9 +23,15 @@ class Identifier
 		@fully_qualified
 	end
 
+	def hash
+		to_s.hash
+	end
+
 	def == (other)
 		to_s == other.to_s
 	end
+
+	alias eql? ==
 
 	def to_str
 		(namespace + [@name]).join '.'

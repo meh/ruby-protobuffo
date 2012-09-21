@@ -8,12 +8,6 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 #++
 
-begin
-	require 'backports/1.9.2'
-rescue LoadError
-	retry if require 'rubygems'
-end
-
 module ProtoBuffo
 
 class Field

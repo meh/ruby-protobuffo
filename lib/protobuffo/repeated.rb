@@ -30,21 +30,19 @@ class Repeated < Array
 	end
 
 	def insert (index, *obj)
-		super(index, obj.map { |o| field.validate!(o) })
+		super(index, *obj.map { |o| field.validate!(o) })
 	end
 
 	def push (*obj)
-		super(obj.map { |o| field.validate!(o) })
+		super(*obj.map { |o| field.validate!(o) })
 	end
 
 	def replace (other)
-		other.each { |o| field.validate!(o) }
-
 		super(other.map { |o| field.validate!(o) })
 	end
 
 	def unshift (*obj)
-		super(obj.map { |o| field.validate!(o) })
+		super(*obj.map { |o| field.validate!(o) })
 	end
 end
 
