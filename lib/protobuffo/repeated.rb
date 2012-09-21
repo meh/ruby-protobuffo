@@ -8,13 +8,9 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 #++
 
-require 'forwardable'
-
 module ProtoBuffo
 
 class Repeated < Array
-	extend Forwardable
-
 	attr_reader :field
 
 	def initialize (field)
@@ -26,39 +22,29 @@ class Repeated < Array
 	undef_method :fill
 
 	def << (obj)
-		field.validate!(obj)
-
-		super
+		super(field.validate!(obj))
 	end
 
 	def []= (*args, obj)
-		field.validate!(obj)
-
-		super
+		super(*args, field.validate!(obj))
 	end
 
 	def insert (index, *obj)
-		obj.each { |o| field.validate!(o) }
-
-		super
+		super(index, obj.map { |o| field.validate!(o) })
 	end
 
 	def push (*obj)
-		obj.each { |o| field.validate!(o) }
-
-		super
+		super(obj.map { |o| field.validate!(o) })
 	end
 
 	def replace (other)
 		other.each { |o| field.validate!(o) }
 
-		super
+		super(other.map { |o| field.validate!(o) })
 	end
 
 	def unshift (*obj)
-		obj.each { |o| field.validate!(o) }
-
-		super
+		super(obj.map { |o| field.validate!(o) })
 	end
 end
 

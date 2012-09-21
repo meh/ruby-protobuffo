@@ -22,14 +22,22 @@ class Enum
 	end
 
 	def has? (what)
-		!to_i(what).nil? && !to_sym(what).nil?
+		@values.has_key?(what) || @values.has_value?(what)
 	end
 
 	def to_i (sym)
+		raise ArgumentError, "#{sym} is not present" unless has?(sym)
+
+		return sym if sym.is_a?(Integer)
+
 		@values[sym]
 	end
 
 	def to_sym (num)
+		raise ArgumentError, "#{num} is not present" unless has?(num)
+
+		return num if num.is_a? Symbol
+
 		@values.key(num)
 	end
 end
