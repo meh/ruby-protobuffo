@@ -9,7 +9,7 @@
 #++
 
 begin
-	require 'backports/1.9.2/array'
+	require 'backports/1.9.2'
 rescue LoadError
 	retry if require 'rubygems'
 end
