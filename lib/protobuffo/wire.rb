@@ -79,7 +79,7 @@ class Wire
 	end
 
 	def write_sfixed32 (n)
-		write_fixed32((n << 1) ^ (n >> 31))
+		write_fixed32(encode_zigzag(n, 32))
 	end
 
 	def write_fixed64 (n)
@@ -93,7 +93,7 @@ class Wire
 	end
 
 	def write_sfixed64 (n)
-		write_fixed64((n << 1) ^ (n >> 63))
+		write_fixed64(encode_zigzag(n, 64))
 
 		self
 	end
@@ -107,7 +107,7 @@ class Wire
 	end
 
 	def write_sint32 (n)
-		write_uint32((n << 1) ^ (n >> 31))
+		write_uint32(encode_zigzag(n, 32))
 	end
 
 	def write_uint32 (n)
@@ -127,7 +127,7 @@ class Wire
 	end
 
 	def write_sint64 (n)
-		write_uint64((n << 1) ^ (n >> 63))
+		write_uint64(encode_zigzag(n, 64))
 	end
 
 	def write_uint64 (n)
@@ -280,6 +280,10 @@ class Wire
 	end
 
 private
+	def encode_zigzag (n, bits)
+		(n << 1) ^ (n >> (bits - 1))
+	end
+
 	def decode_zigzag (n)
 		(n >> 1) ^ -(n & 1)
 	end
