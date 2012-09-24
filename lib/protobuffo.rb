@@ -23,28 +23,50 @@ module ProtoBuffo
 	autoload :Fields, 'protobuffo/fields'
 	autoload :Message, 'protobuffo/message'
 
-	def self.compile (what)
-		Compiler.new.compile(if what.respond_to? :to_io
-			what.to_io
-		elsif File.readable?(what)
-			File.read(what)
-		else
-			what.to_s
-		end)
-	end
+	class << self
+		def compile (what)
+			Compiler.new.compile(if what.respond_to? :to_io
+				what.to_io
+			elsif File.readable?(what)
+				File.read(what)
+			else
+				what.to_s
+			end)
+		end
 
-	def self.to_sexp (what)
-		Transform.new.apply(Parser.new.parse(if what.respond_to? :to_io
-			what.to_io
-		elsif File.readable?(what)
-			File.read(what)
-		else
-			what.to_s
-		end))
-	end
+		def to_sexp (what)
+			Transform.new.apply(Parser.new.parse(if what.respond_to? :to_io
+				what.to_io.read
+			elsif File.readable?(what)
+				File.read(what)
+			else
+				begin
+					import(what)
+				rescue LoadError
+					what.to_s
+				end
+			end))
+		end
 
-	def self.require_proto (path, options = {})
+		def import (path, base = $:, &block)
+			unless path.end_with? '.proto'
+				path = "#{path}.proto"
+			end
 
+			base.each {|base|
+				file = "#{base}/#{path}"
+
+				if File.readable?(file)
+					return block ? File.open(file, &block) : File.read(file)
+				end
+			}
+
+			raise LoadError, "cannot load such file -- #{path}"
+		end
+
+		def require_proto (path, options = {})
+
+		end
 	end
 end
 

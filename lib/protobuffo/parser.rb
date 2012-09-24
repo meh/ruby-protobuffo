@@ -164,7 +164,7 @@ class Transform < Parslet::Transform
 	}
 
 	rule(:package => subtree(:identifiers)) {
-		s(:package, Identifier.new(identifiers.pop, identifiers))
+		s(:package, Identifier.new(identifiers.pop, identifiers, true))
 	}
 
 	rule(:option => subtree(:descriptor)) {

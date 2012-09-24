@@ -11,6 +11,12 @@
 module ProtoBuffo
 
 class Identifier
+	def self.new (name, *args)
+		return name if name.is_a?(Identifier)
+
+		super
+	end
+
 	attr_reader :namespace, :name
 
 	def initialize (name, namespace = [], fully_qualified = false)
@@ -33,11 +39,31 @@ class Identifier
 
 	alias eql? ==
 
+	def to_a
+		namespace + [@name]
+	end
+
 	def to_str
-		(namespace + [@name]).join '.'
+		to_a.join '.'
 	end
 
 	alias to_s to_str
+
+	def to_sym
+		to_s.to_sym
+	end
+
+	def to_constant
+		result = fully_qualified? ? '::' : ''
+
+		namespace.each {|ns|
+			result << "#{ns[0].upcase}#{ns[1 .. -1]}::"
+		}
+
+		result << "#{name[0].upcase}#{name[1 .. -1]}"
+
+		result
+	end
 end
 
 end
