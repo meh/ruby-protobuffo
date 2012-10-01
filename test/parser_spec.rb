@@ -140,7 +140,7 @@ describe ProtoBuffo do
 
 		it 'handles package statements' do
 			package.first.sexp_type.should == :package
-			package.first.sexp_body.first.should == 'lol.wut'
+			package.first.sexp_body.first.should == '.lol.wut'
 		end
 
 		it 'handles option statements' do

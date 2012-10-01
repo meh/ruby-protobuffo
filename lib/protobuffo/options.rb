@@ -29,9 +29,13 @@ end
 class Options
 	include Enumerable
 
-	def initialize (owner, options = [])
-		@owner   = owner
-		@options = options
+	attr_reader :for
+
+	def initialize (what, options = [])
+		@for     = what
+		@options = options.map {|what|
+			what.is_a?(Option) ? what : Option.new(*what)
+		}
 	end
 
 	def add (name, value, custom = false)
@@ -54,6 +58,10 @@ class Options
 
 	def custom (&block)
 		each { |o| block.call o if o.custom? }
+	end
+
+	def has? (what)
+		!!self[what]
 	end
 
 	def [] (what)

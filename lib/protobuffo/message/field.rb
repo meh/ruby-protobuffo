@@ -20,7 +20,7 @@ class Field
 		@type      = type
 		@name      = name
 		@tag       = tag
-		@options   = Options.owner(self, options)
+		@options   = Options.new(self, options)
 		@extension = extension
 	end
 
@@ -29,13 +29,13 @@ class Field
 	def repeated?; rule == :repeated; end
 
 	def default
-		return unless option = options.find { |o| o.name == :default }
+		return unless options.has?(:default)
 
-		option.value
+		options[:default].value
 	end
 
-	def packed?;     options.none? { |o| o.name == :packed };     end
-	def deprecated?; options.none? { |o| o.name == :deprecated }; end
+	def packed?;     options.has?(:packed)     && options[:packed].value;     end
+	def deprecated?; options.has?(:deprecated) && options[:deprecated].value; end
 
 	def extension?; @extension;        end
 	def extension!; @extension = true; end
@@ -53,14 +53,23 @@ class Field
 			when :uint64                              then value.is_a?(Integer) && value >= Wire::MIN_UINT64 && value <= Wire::MAX_UINT64
 			when :float, :double                      then value.is_a?(Numeric)
 			when :bytes, :string                      then value.is_a?(String)
-			when Enum                                 then type.has?(value)
-			when Class                                then value.is_a?(String) || value.is_a?(type)
+
+			when Class
+				if type.ancestors.member?(Message)
+					value.is_a?(String) || value.is_a?(type)
+				elsif type.ancestors.member?(Enum)
+					value.is_a?(Symbol) || value.is_a?(Integer)
+				end
 		end
 
-		case type
-			when Enum  then type.to_sym(value)
-			when Class then value.is_a?(String) ? type.unpack(value) : value
-			else            value
+		if type.is_a?(Class)
+			if type.ancestors.member?(Message)
+				value.is_a?(String) ? type.unpack(value) : value
+			elsif type.ancestors.member?(Enum)
+				type[value].to_sym
+			end
+		else
+			value
 		end
 	end
 end

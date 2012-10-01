@@ -56,7 +56,7 @@ class Message
 						end
 
 						if field.deprecated? && !instance_variable_defined?(instance_variable_name)
-							warn "#{name} is deprecated for #{self.class.name} in #{self.class.package}"
+							warn "#{name} is deprecated for #{self.class.identifier}"
 						end
 
 						instance_variable_set instance_variable_name, field.validate!(value)
@@ -98,7 +98,7 @@ class Message
 
 				if field = fields.find { |f| f.tag == tag }
 					unless type == Wire.type_for(:bytes) && field.repeated? || field.type.is_a?(Class)
-						raise "wrong type for #{field.name} for #{name} in #{package}" if type != Wire.type_for(field.type)
+						raise "wrong type for #{field.name} for #{identifier}" if type != Wire.type_for(field.type)
 					end
 
 					if field.repeated?
@@ -111,10 +111,12 @@ class Message
 						else
 							message[field.name].push(wire.read(field.type))
 						end
-					elsif field.type.is_a?(Enum)
-						message[field.name] = wire.read_int32
 					elsif field.type.is_a?(Class)
-						message[field.name] = wire.read_bytes
+						if field.type.ancestors.member?(Message)
+							message[field.name] = wire.read_bytes
+						elsif field.type.ancestors.member?(Enum)
+							message[field.name] = wire.read_int32
+						end
 					else
 						message[field.name] = wire.read(field.type)
 					end
@@ -212,15 +214,14 @@ class Message
 					}
 				end
 			else
-				case field.type
-				when Class
-					wire.write_info field.tag, :bytes
-					wire.write_bytes self[field.name].pack.string
-
-				when Enum
-					wire.write_info field.tag, :int32
-					wire.write_int32 field.type.to_i(self[field.name])
-
+				if field.type.is_a? Class
+					if field.type.ancestors.member?(Message)
+						wire.write_info field.tag, :bytes
+						wire.write_bytes self[field.name].pack.string
+					elsif field.type.ancestors.member?(Enum)
+						wire.write_info field.tag, :int32
+						wire.write_int32 field.type[self[field.name]].to_i
+					end
 				else
 					wire.write_info field.tag, field.type
 					wire.write field.type, self[field.name]
