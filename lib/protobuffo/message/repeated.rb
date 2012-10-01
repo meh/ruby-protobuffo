@@ -8,7 +8,7 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 #++
 
-module ProtoBuffo
+module ProtoBuffo; class Message
 
 class Repeated < Array
 	attr_reader :field
@@ -46,4 +46,4 @@ class Repeated < Array
 	end
 end
 
-end
+end; end

@@ -11,18 +11,37 @@
 module ProtoBuffo
 
 class Identifier
-	def self.new (name, *args)
-		return name if name.is_a?(Identifier)
+	def self.new (*args)
+		return args.first if args.length == 1 && args.first.is_a?(Identifier)
 
 		super
 	end
 
-	attr_reader :namespace, :name
+	attr_reader :namespace, :name, :type
 
-	def initialize (name, namespace = [], fully_qualified = false)
-		@name            = name.freeze
-		@namespace       = namespace.freeze
-		@fully_qualified = fully_qualified
+	def initialize (*args)
+		if args.last === true || args.last === false
+			@fully_qualified = args.pop
+		end
+
+		identifier = args.flatten.compact.join('.')
+
+		fully_qualified! if identifier.start_with? '.'
+
+		identifier.split('.').reject(&:empty?).tap {|args|
+			@name      = args.pop
+			@namespace = args
+		}
+	end
+
+	def fully_qualified!
+		@fully_qualified = true
+
+		self
+	end
+
+	def unqualified!
+		@fully_qualified = false
 	end
 
 	def fully_qualified?
@@ -39,12 +58,16 @@ class Identifier
 
 	alias eql? ==
 
+	def add (name)
+		Identifier.new(to_a, name, fully_qualified?)
+	end
+
 	def to_a
 		namespace + [@name]
 	end
 
 	def to_str
-		to_a.join '.'
+		(fully_qualified? ? '.' : '') << to_a.join('.')
 	end
 
 	alias to_s to_str
@@ -53,16 +76,25 @@ class Identifier
 		to_s.to_sym
 	end
 
-	def to_constant
+	def to_constant (map = {})
 		result = fully_qualified? ? '::' : ''
 
 		namespace.each {|ns|
-			result << "#{ns[0].upcase}#{ns[1 .. -1]}::"
+			result << "#{capitalize(ns)}::"
 		}
 
-		result << "#{name[0].upcase}#{name[1 .. -1]}"
+		result << "#{capitalize(name)}"
 
 		result
+	end
+
+	def to_namespace (map = {})
+		"module #{Identifier.new(name).to_constant}"
+	end
+
+private
+	def capitalize (s)
+		"#{s[0].upcase}#{s[1 .. -1].gsub(/_(.)/) { $1.upcase }}"
 	end
 end
 

@@ -36,10 +36,19 @@ class Parser < Parslet::Parser
 		str('package') >> space >> identifiers.as(:package) >> space? >> str(';')
 	}
 
-	rule(:option) {
-		str('option') >> space >> (
-			identifiers.as(:name) >> space? >> str('=') >> space? >> constant.as(:value)
-		).as(:option) >> str(';')
+	rule(:option) { (
+		str('option') >> space >> option_field >> str(';')
+	).as(:option) }
+
+	rule(:option_field) { (
+		(identifiers.as(:name) >> space? >> str('=') >> space? >> constant.as(:value)).as(:normal) |
+		(str('(') >> identifiers.as(:name) >> str(')') >> str('=') >> space? >> constant.as(:value)).as(:custom)
+	).as(:option_field) }
+
+	rule(:option_inline_fields) {
+		(space? >> str('[') >> space? >> option_field.repeat(1, 1) >>
+			(space? >> str(',') >> space? >> option_field).repeat.maybe >>
+		space? >> str(']')).maybe
 	}
 
 	rule(:extend) {
@@ -56,15 +65,9 @@ class Parser < Parslet::Parser
 
 	rule(:field) {
 		(label >> space? >> type >> space? >> identifier >>
-			space? >> str('=') >> space? >> integer.as(:tag) >>
-			(space? >> str('[') >> space? >> field_option.repeat(1, 1) >>
-			 (space? >> str(',') >> space? >> field_option).repeat.maybe >>
-			space? >> str(']')).maybe).as(:field) >> space? >> str(';')
+			space? >> str('=') >> space? >> integer.as(:tag) >> option_inline_fields
+		).as(:field) >> space? >> str(';')
 	}
-
-	rule(:field_option) { (
-		(str('default') | str('packed') | str('deprecated') | identifiers).as(:name) >> space? >> str('=') >> space? >> constant.as(:value)
-	).as(:field_option) }
 
 	rule(:enum) {
 		str('enum') >> space >> (identifier.as(:name) >> space? >> str('{') >> (
@@ -72,9 +75,11 @@ class Parser < Parslet::Parser
 		).repeat.as(:body) >> str('}')).as(:enum)
 	}
 
-	rule(:enum_field) { (
-		identifier.as(:name) >> space? >> str('=') >> space? >> integer.as(:value) >> space? >> str(';')
-	).as(:enum_field) }
+	rule(:enum_field) {
+		(identifier.as(:name) >> space? >> str('=') >> space? >> integer.as(:value) >> space? >>
+			option_inline_fields
+		).as(:enum_field) >> space? >> str(';')
+	}
 
 	rule(:extensions) {
 		str('extensions') >> space >> (extension.repeat(1, 1) >>
@@ -164,11 +169,19 @@ class Transform < Parslet::Transform
 	}
 
 	rule(:package => subtree(:identifiers)) {
-		s(:package, Identifier.new(identifiers.pop, identifiers, true))
+		s(:package, Identifier.new(identifiers).fully_qualified!)
 	}
 
 	rule(:option => subtree(:descriptor)) {
-		s(:option, Identifier.new(descriptor[:name].pop, descriptor[:name]), descriptor[:value])
+		s(:option, *descriptor)
+	}
+
+	rule(:option_field => subtree(:descriptor)) {
+		if descriptor[:normal]
+			[Identifier.new(descriptor[:normal][:name]), descriptor[:normal][:value]]
+		else
+			[Identifier.new(descriptor[:custom][:name]), descriptor[:custom][:value]]
+		end
 	}
 
 	rule(:extend => subtree(:descriptor)) {
@@ -210,13 +223,6 @@ class Transform < Parslet::Transform
 		s(:field, Identifier.new(descriptor[:identifier].to_s), type, descriptor[:label].to_sym, descriptor[:tag], options)
 	}
 
-	rule(:field_option => subtree(:descriptor)) {
-		name = %w(default packed deprecated).member?(descriptor[:name]) ?
-			descriptor[:name].to_sym : Identifier.new(descriptor[:name].pop, descriptor[:name])
-
-		[name, descriptor[:value]]
-	}
-
 	rule(:identifier => simple(:text)) {
 		text.to_s
 	}
@@ -224,17 +230,15 @@ class Transform < Parslet::Transform
 	rule(:tag => simple(:text)) {
 		text.to_s.to_i.tap {|x|
 			if x == 0 || x >= 2 ** 29 || !(x < 19000 && x > 19999)
-				raise RuntimeError, 'invalid tag number'
+				raise 'invalid tag number'
 			end
 		}
 	}
 
 	rule(:user_type => subtree(:descriptor)) {
 		fully_qualified = descriptor.shift[:fully_qualified]
-		name            = descriptor.pop
-		namespace       = descriptor
 
-		Identifier.new(name, namespace, fully_qualified)
+		Identifier.new(descriptor, fully_qualified)
 	}
 
 	rule(:decimal => simple(:text)) {

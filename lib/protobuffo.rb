@@ -8,6 +8,8 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 #++
 
+require 'protobuffo/extensions'
+
 module ProtoBuffo
 	autoload :Wire, 'protobuffo/wire'
 
@@ -16,36 +18,19 @@ module ProtoBuffo
 	autoload :Transform, 'protobuffo/parser'
 	autoload :Compiler, 'protobuffo/compiler'
 
-	autoload :Unknown, 'protobuffo/unknown'
-	autoload :Repeated, 'protobuffo/repeated'
+	autoload :Option, 'protobuffo/options'
+	autoload :Options, 'protobuffo/options'
+	autoload :Package, 'protobuffo/package'
 	autoload :Enum, 'protobuffo/enum'
-	autoload :Field, 'protobuffo/fields'
-	autoload :Fields, 'protobuffo/fields'
 	autoload :Message, 'protobuffo/message'
 
 	class << self
-		def compile (what)
-			Compiler.new.compile(if what.respond_to? :to_io
-				what.to_io
-			elsif File.readable?(what)
-				File.read(what)
-			else
-				what.to_s
-			end)
+		def to_sexp (what)
+			Transform.new.apply(Parser.new.parse(read(what)))
 		end
 
-		def to_sexp (what)
-			Transform.new.apply(Parser.new.parse(if what.respond_to? :to_io
-				what.to_io.read
-			elsif File.readable?(what)
-				File.read(what)
-			else
-				begin
-					import(what)
-				rescue LoadError
-					what.to_s
-				end
-			end))
+		def to_ruby (what, configuration = nil)
+			Compiler::Ruby.new(*configuration).compile(what)
 		end
 
 		def import (path, base = $:, &block)
@@ -64,14 +49,24 @@ module ProtoBuffo
 			raise LoadError, "cannot load such file -- #{path}"
 		end
 
-		def require_proto (path, options = {})
-
+	private
+		def read (what)
+			if what.respond_to? :to_io
+				what.to_io.read
+			elsif File.readable?(what)
+				File.read(what)
+			else
+				begin
+					import(what)
+				rescue LoadError
+					what.to_s
+				end
+			end
 		end
 	end
 end
 
 module Kernel
-	def require_proto (*args)
-		ProtoBuffo.require_proto(*args)
+	def require_proto (path, options = {})
 	end
 end

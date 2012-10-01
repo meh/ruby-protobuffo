@@ -181,7 +181,7 @@ describe ProtoBuffo do
 		end
 
 		it 'handles field options' do
-			field_options.first.sexp_body[1].sexp_body[4][0].should == [:default, 23]
+			field_options.first.sexp_body[1].sexp_body[4][0].should == ['default', 23]
 
 			field_options.first.sexp_body[2].sexp_body[4][0].should == ['lol', 23]
 			field_options.first.sexp_body[2].sexp_body[4][1].should == ['wut', 42]

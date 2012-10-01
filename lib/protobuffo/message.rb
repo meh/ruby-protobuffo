@@ -11,21 +11,30 @@
 module ProtoBuffo
 
 class Message
+	autoload :Field, 'protobuffo/message/field'
+	autoload :Fields, 'protobuffo/message/fields'
+	autoload :Unknown, 'protobuffo/message/unknown'
+	autoload :Repeated, 'protobuffo/message/repeated'
+
 	class << self
-		def package (value = nil)
-			value ? @package = value : @package
+		def identifier (value = nil)
+			value ? @identifier : @identifier = Identifier.new(value)
 		end
 
-		def name (value = nil)
-			value ? @name = value : @name || super
+		def options
+			@options ||= Options.new(self)
+		end
+
+		def option (name, value, custom = false)
+			options.add(name, value, custom)
 		end
 
 		def fields
 			@fields ||= Fields.new(self)
 		end
 
-		def field (rule, type, name, tag, options = {})
-			fields.add(rule, type, name, tag, options).tap {|field|
+		def field (rule, type, name, tag, options = [])
+			fields.add(rule, type, name, tag, options, @extension).tap {|field|
 				instance_variable_name = "@#{name}".to_sym
 
 				if field.repeated?
@@ -70,6 +79,14 @@ class Message
 
 		def extensions (what)
 			fields.add_extensions(what)
+		end
+
+		def extension (&block)
+			@extension = true
+
+			yield
+		ensure
+			@extension = false
 		end
 
 		def unpack (io, options = {})

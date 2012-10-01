@@ -23,6 +23,7 @@ class Identifiers < SexpProcessor
 		self.expected        = Array
 		self.default_method  = :default
 		self.warn_on_default = false
+		self.require_empty   = false
 
 		@configuration = { path: $: }.merge(configuration)
 		@env           = SexpProcessor::Environment.new
@@ -47,7 +48,7 @@ class Identifiers < SexpProcessor
 	end
 
 	def default (exp)
-		exp.clear
+		[]
 	end
 
 	def process_import (exp)

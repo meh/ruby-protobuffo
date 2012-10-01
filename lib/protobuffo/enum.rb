@@ -11,34 +11,35 @@
 module ProtoBuffo
 
 class Enum
-	include Enumerable
+	autoload :Value, 'protobuffo/enum/value'
+	autoload :Values, 'protobuffo/enum/values'
 
-	def initialize (values = {})
-		@values = values
-	end
+	class << self
+		def options
+			@options ||= Options.new(self)
+		end
 
-	def each (&block)
-		@values.each(&block)
-	end
+		def option (name, value, custom = false)
+			options.add(name, value, custom)
+		end
 
-	def has? (what)
-		@values.has_key?(what) || @values.has_value?(what)
-	end
+		def values
+			@values ||= []
+		end
 
-	def to_i (sym)
-		raise ArgumentError, "#{sym} is not present" unless has?(sym)
+		def value (name, value, options = [])
+			Value.new(name, value, options).tap {|v|
+				values << v
+			}
+		end
 
-		return sym if sym.is_a?(Integer)
+		def [] (what)
+			values.find { |v| what === v.name || what.to_s == v.name.to_s }
+		end
 
-		@values[sym]
-	end
-
-	def to_sym (num)
-		raise ArgumentError, "#{num} is not present" unless has?(num)
-
-		return num if num.is_a? Symbol
-
-		@values.key(num)
+		def const_missing (name)
+			self[name]
+		end
 	end
 end
 

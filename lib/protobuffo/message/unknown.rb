@@ -8,7 +8,7 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 #++
 
-module ProtoBuffo
+module ProtoBuffo; class Message
 
 class Unknown
 	attr_reader :tag, :type, :value
@@ -20,4 +20,4 @@ class Unknown
 	end
 end
 
-end
+end; end
