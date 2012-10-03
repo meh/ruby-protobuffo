@@ -246,10 +246,8 @@ class Wire
 		shift = 0
 		b     = 0xff
 
-		until (b & 0x80) == 0
-			if shift >= 64
-				raise BufferOverflowError, "varint"
-			end
+		until (b & 0x80).zero?
+			raise 'varint overflow' if shift >= 64
 
 			b      = read_raw(1).ord
 			n     |= ((b & 0x7F) << shift)

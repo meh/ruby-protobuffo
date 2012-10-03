@@ -75,27 +75,6 @@ class Identifier
 	def to_sym
 		to_s.to_sym
 	end
-
-	def to_constant (map = {})
-		result = fully_qualified? ? '::' : ''
-
-		namespace.each {|ns|
-			result << "#{capitalize(ns)}::"
-		}
-
-		result << "#{capitalize(name)}"
-
-		result
-	end
-
-	def to_namespace (map = {})
-		"module #{Identifier.new(name).to_constant}"
-	end
-
-private
-	def capitalize (s)
-		"#{s[0].upcase}#{s[1 .. -1].gsub(/_(.)/) { $1.upcase }}"
-	end
 end
 
 end

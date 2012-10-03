@@ -16,7 +16,7 @@ class Option
 	attr_reader :name, :value
 
 	def initialize (name, value, custom = true)
-		@name   = name
+		@name   = Identifier.new(name)
 		@value  = value
 		@custom = custom
 	end

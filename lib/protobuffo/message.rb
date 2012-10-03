@@ -97,8 +97,10 @@ class Message
 				tag, type = wire.read_info
 
 				if field = fields.find { |f| f.tag == tag }
-					unless type == Wire.type_for(:bytes) && field.repeated? || field.type.is_a?(Class)
-						raise "wrong type for #{field.name} for #{identifier}" if type != Wire.type_for(field.type)
+					unless type == Wire.type_for(:bytes) && (field.repeated? || (field.type.is_a?(Class) && field.type.ancestors.member?(Message)))
+						if (field.type.is_a?(Class) && field.type.ancestors.member?(Enum) && type != Wire.type_for(:int32)) || type != Wire.type_for(field.type)
+							raise "wrong type for #{field.name} for #{identifier}"
+						end
 					end
 
 					if field.repeated?

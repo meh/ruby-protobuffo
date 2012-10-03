@@ -56,7 +56,7 @@ describe ProtoBuffo do
 			ProtoBuffo.to_sexp(%q{
 				message A {
 					required int32 a = 1 [default = 23];
-					required int32 b = 2 [lol = 23, wut = 42];
+					required int32 b = 2 [lol = 23, (wut) = 42];
 				}
 			})
 		end
@@ -85,6 +85,7 @@ describe ProtoBuffo do
 		let :options do
 			ProtoBuffo.to_sexp(%q{
 				option lol.wut = 2;
+				option (lol.wut) = 2;
 			})
 		end
 
@@ -145,8 +146,14 @@ describe ProtoBuffo do
 
 		it 'handles option statements' do
 			options.first.sexp_type.should == :option
-			options.first.sexp_body.first.should == 'lol.wut'
-			options.first.sexp_body.last.should == 2
+			options.first.sexp_body.first.sexp_type == :normal
+			options.first.sexp_body.first.sexp_body.first.should == 'lol.wut'
+			options.first.sexp_body.first.sexp_body.last.should == 2
+
+			options.last.sexp_type.should == :option
+			options.last.sexp_body.first.sexp_type == :custom
+			options.last.sexp_body.first.sexp_body.first.should == 'lol.wut'
+			options.last.sexp_body.first.sexp_body.last.should == 2
 		end
 
 		it 'handles extend statements' do
@@ -181,10 +188,10 @@ describe ProtoBuffo do
 		end
 
 		it 'handles field options' do
-			field_options.first.sexp_body[1].sexp_body[4][0].should == ['default', 23]
+			field_options.first.sexp_body[1].sexp_body[4][0].should == s(:normal, 'default', 23)
 
-			field_options.first.sexp_body[2].sexp_body[4][0].should == ['lol', 23]
-			field_options.first.sexp_body[2].sexp_body[4][1].should == ['wut', 42]
+			field_options.first.sexp_body[2].sexp_body[4][0].should == s(:normal, 'lol', 23)
+			field_options.first.sexp_body[2].sexp_body[4][1].should == s(:custom, 'wut', 42)
 		end
 
 		it 'handles extensions statements' do

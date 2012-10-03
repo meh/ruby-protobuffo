@@ -37,12 +37,12 @@ class Parser < Parslet::Parser
 	}
 
 	rule(:option) { (
-		str('option') >> space >> option_field >> str(';')
+		str('option') >> space >> option_field >> space? >> str(';')
 	).as(:option) }
 
 	rule(:option_field) { (
 		(identifiers.as(:name) >> space? >> str('=') >> space? >> constant.as(:value)).as(:normal) |
-		(str('(') >> identifiers.as(:name) >> str(')') >> str('=') >> space? >> constant.as(:value)).as(:custom)
+		(str('(') >> identifiers.as(:name) >> str(')') >> space? >> str('=') >> space? >> constant.as(:value)).as(:custom)
 	).as(:option_field) }
 
 	rule(:option_inline_fields) {
@@ -173,14 +173,14 @@ class Transform < Parslet::Transform
 	}
 
 	rule(:option => subtree(:descriptor)) {
-		s(:option, *descriptor)
+		s(:option, descriptor)
 	}
 
 	rule(:option_field => subtree(:descriptor)) {
 		if descriptor[:normal]
-			[Identifier.new(descriptor[:normal][:name]), descriptor[:normal][:value]]
+			s(:normal, Identifier.new(descriptor[:normal][:name]), descriptor[:normal][:value])
 		else
-			[Identifier.new(descriptor[:custom][:name]), descriptor[:custom][:value]]
+			s(:custom, Identifier.new(descriptor[:custom][:name]), descriptor[:custom][:value])
 		end
 	}
 

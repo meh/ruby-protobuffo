@@ -11,6 +11,29 @@
 module ProtoBuffo; class Compiler < SexpProcessor
 
 class Ruby < Compiler
+	class << self
+		def constant (identifier, map = {})
+			identifier = Identifier.new(identifier)
+			result     = identifier.fully_qualified? ? '::' : ''
+
+			identifier.namespace.each {|ns|
+				result << "#{capitalize(ns)}::"
+			}
+
+			result << "#{capitalize(identifier.name)}"
+		end
+
+		def namespace (identifier, map = {})
+			identifier = Identifier.new(identifier)
+			result     = ''
+		end
+
+	private
+		def capitalize (s)
+			"#{s[0].upcase}#{s[1 .. -1].gsub(/_(.)/) { $1.upcase }}"
+		end
+	end
+
 	def initialize (configuration = {})
 		super({ indentation: '  ', path: $:, map: {} }.merge(configuration))
 
@@ -79,17 +102,37 @@ class Ruby < Compiler
 		end
 	end
 
+	# TODO: proper processing of object options, the identifiers table should be looked up
+	#       for the previous symbol in the identifier and set accordingly.
 	def process_option (exp)
-		name, value = exp.shift(2)
+		scope {
+			env.current[:option] = true
 
-		env[:options][name] = value
+			process(exp.shift)
+		}
+	end
+
+	def process_normal (exp)
+		if env[:option]
+			name, value = exp
+
+			line "option #{name.to_s.inspect}, #{value.inspect}"
+		end
+	end
+
+	def process_custom (exp)
+		if env[:option]
+			name, value = exp
+
+			line "option #{name.to_s.inspect}, #{value.inspect}, true"
+		end
 	end
 
 	def process_message (exp)
 		name, *rest = exp.slice!(0 .. -1)
 		top         = env[:top].add(name)
 
-		line "class #{Identifier.new(name).to_constant(configuration[:map])} < ProtoBuffo::Message"
+		line "class #{Ruby.constant(name, configuration[:map])} < ProtoBuffo::Message"
 
 		indent {
 			line "identifier #{env[:top].to_s.inspect}"
@@ -108,7 +151,7 @@ class Ruby < Compiler
 	def process_extend (exp)
 		name, *rest = exp.slice!(0 .. -1)
 
-		line "class #{name.to_constant(configuration[:map])} < ProtoBuffo::Message"
+		line "class #{Ruby.constant(name, configuration[:map])} < ProtoBuffo::Message"
 
 		indent {
 			scope {
@@ -124,27 +167,27 @@ class Ruby < Compiler
 	def process_enum (exp)
 		name, *rest = exp.slice!(0 .. -1)
 
-		line "#{Identifier.new(name).to_constant(configuration[:map])} = ProtoBuffo::Enum.new(#{
-			rest.map {|name, value|
-				":'#{name.to_s}' => #{value.inspect}"
-			}.join ', '
-		})"
+		line "class #{Ruby.constant(name, configuration[:map])} < ProtoBuffo::Enum"
+		indent {
+			rest.each {|name, value, options|
+				line "value #{name.inspect}, #{value.inspect}, #{options.inspect}"
+			}
+		}
+		line 'end'
 	end
 
 	def process_field (exp)
 		name, type, rule, tag, options = exp.shift(5)
 
 		if env[:extend]
-			options[:extension] = true
+			line 'extension {'
+			indent {
+				line "#{rule} #{type.inspect}, #{name.to_sym.inspect}, #{tag}, #{options.inspect}"
+			}
+			line '}'
+		else
+			line "#{rule} #{type.inspect}, #{name.to_sym.inspect}, #{tag}, #{options.inspect}"
 		end
-
-		line "#{rule} #{type.inspect}, #{name.to_sym.inspect}, #{tag}#{
-			unless options.empty?
-				', ' + options.map {|name, value|
-					"#{name.to_s.inspect} => #{value}"
-				}.join(', ')
-			end
-		}"
 	end
 end
 
